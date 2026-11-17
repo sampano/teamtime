@@ -1,3 +1,4 @@
+import { LoaderCircle, Shield, User } from "lucide-react";
 import { useState } from "react";
 import { ApiError } from "../api/http";
 import { updateMemberRole } from "../api/members";
@@ -56,28 +57,42 @@ export default function MemberRoleButton({
   }
 
   return (
-    <div className="mt-4 space-y-3">
+    <div className="space-y-2">
       <button
         type="button"
         onClick={handleRoleChange}
         disabled={isSubmitting || promotionBlocked}
         aria-label={`Make ${member.fullName} ${nextRole}`}
-        className="rounded-lg border border-brand-navy/30
-                   px-4 py-2 text-sm font-medium text-brand-navy
-                   focus-visible:outline-2
-                   focus-visible:outline-offset-2
-                   focus-visible:outline-brand-navy
-                   disabled:cursor-not-allowed disabled:opacity-60"
+        aria-busy={isSubmitting}
+        className="inline-flex items-center justify-center gap-1.5
+                 rounded-xl border border-slate-200 bg-white
+                 px-3 py-1.5 text-xs font-semibold text-slate-700
+                 transition-colors hover:border-indigo-200
+                 hover:bg-indigo-50 hover:text-brand-indigo
+                 focus-visible:outline-2
+                 focus-visible:outline-offset-2
+                 focus-visible:outline-brand-indigo
+                 disabled:opacity-60"
       >
-        {isSubmitting ? "Updating…" : `Make ${nextRole}`}
+        {isSubmitting ? (
+          <LoaderCircle size={14} aria-hidden="true" className="animate-spin" />
+        ) : isAdmin ? (
+          <User size={14} aria-hidden="true" />
+        ) : (
+          <Shield size={14} aria-hidden="true" />
+        )}
+
+        <span>{isSubmitting ? "Updating…" : `Make ${nextRole}`}</span>
       </button>
 
       {promotionBlocked && (
-        <p>Reactivate this account before promoting it to Admin.</p>
+        <p className="max-w-xs text-[11px] text-slate-500">
+          Reactivate this account before promoting it to Admin.
+        </p>
       )}
 
       {error && (
-        <p role="alert" className="text-brand-red">
+        <p role="alert" className="max-w-xs text-xs text-rose-600">
           {error}
         </p>
       )}

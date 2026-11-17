@@ -86,24 +86,76 @@ export default function TimeTrackingPage({
   }, [attempt, onSessionExpired]);
 
   return (
-    <section aria-labelledby="time-tracking-heading">
-      <h1 id="time-tracking-heading" className="text-2xl font-semibold">
-        Time tracking
-      </h1>
+    <section aria-labelledby="time-tracking-heading" className="space-y-6">
+      <div>
+        <h1
+          id="time-tracking-heading"
+          className="font-display text-xl font-bold
+                   tracking-tight text-slate-900"
+        >
+          Time tracking
+        </h1>
 
-      <p className="mt-2">Track your work for each client.</p>
-      <p role="status" className="mt-4">
+        <p className="mt-0.5 text-xs text-slate-500">
+          Track your work for each client.
+        </p>
+      </div>
+
+      <p
+        role="status"
+        className={
+          notice
+            ? "rounded-xl border border-emerald-200 bg-emerald-50 " +
+              "px-4 py-3 text-sm text-emerald-800"
+            : "sr-only"
+        }
+      >
         {notice}
       </p>
 
-      <div className="mt-6 rounded-xl border border-brand-navy/15 p-6">
+      <section
+        aria-labelledby="tracker-heading"
+        className="space-y-4 rounded-2xl border
+                 border-slate-200/80 bg-white p-5 shadow-xs"
+      >
+        <div
+          className="flex flex-col gap-3 sm:flex-row
+                   sm:items-center sm:justify-between"
+        >
+          <h2
+            id="tracker-heading"
+            className="font-display text-sm font-bold text-slate-900"
+          >
+            {state.status === "ready" && state.timer
+              ? "Currently tracking"
+              : "Start tracking"}
+          </h2>
+
+          {state.status === "ready" && (
+            <span
+              className="inline-flex items-center gap-1.5 self-start
+                       rounded-full border border-emerald-200/80
+                       bg-emerald-50 px-2.5 py-1 text-xs
+                       font-medium text-emerald-700"
+            >
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+              />
+              {state.clients.length} active clients available for new timers
+            </span>
+          )}
+        </div>
+
         {state.status === "loading" && (
-          <p role="status">Loading time tracking…</p>
+          <p role="status" className="text-sm text-slate-500">
+            Loading time tracking…
+          </p>
         )}
 
         {state.status === "error" && (
           <div className="space-y-4">
-            <p role="alert" className="text-brand-red">
+            <p role="alert" className="text-sm text-rose-600">
               {state.message}
             </p>
 
@@ -113,11 +165,12 @@ export default function TimeTrackingPage({
                 setState({ status: "loading" });
                 setAttempt((value) => value + 1);
               }}
-              className="rounded-lg bg-brand-orange px-4 py-3
-                         text-sm font-semibold text-brand-navy
-                         focus-visible:outline-2
-                         focus-visible:outline-offset-2
-                         focus-visible:outline-brand-navy"
+              className="rounded-xl bg-brand-coral px-4 py-2.5
+                       text-sm font-semibold text-white
+                       transition-colors hover:bg-brand-coral-hover
+                       focus-visible:outline-2
+                       focus-visible:outline-offset-2
+                       focus-visible:outline-brand-indigo"
             >
               Retry
             </button>
@@ -125,42 +178,55 @@ export default function TimeTrackingPage({
         )}
 
         {state.status === "ready" && (
-          <div className="space-y-4">
+          <>
             {state.timer ? (
-              <div className="space-y-2">
-                <h2 className="text-lg font-semibold">Your timer is running</h2>
+              <div
+                className="grid gap-5 rounded-xl border
+                         border-indigo-200/70 bg-indigo-50/40
+                         p-4 lg:grid-cols-[minmax(0,1fr)_auto]"
+              >
+                <div className="min-w-0 space-y-2">
+                  <p className="text-sm font-semibold text-brand-indigo">
+                    {state.timer.clientName}
+                  </p>
 
-                <p>Client: {state.timer.clientName}</p>
-                <p>{state.timer.description}</p>
+                  <p className="break-words text-sm text-slate-700">
+                    {state.timer.description}
+                  </p>
 
-                <p>
-                  Started: {new Date(state.timer.startTimeUtc).toLocaleString()}{" "}
-                  (your local time)
-                </p>
-                <ElapsedTime
-                  key={`elapsed-${state.timer.id}`}
-                  startTimeUtc={state.timer.startTimeUtc}
-                />
-                <StopTimerButton
-                  key={`stop-${state.timer.id}`}
-                  timerId={state.timer.id}
-                  onSessionExpired={onSessionExpired}
-                  onStopped={(entry) => {
-                    setNotice(
-                      `Saved ${entry.durationMinutes.toFixed(2)} minutes for ${entry.clientName}.`,
-                    );
+                  <p className="text-xs text-slate-500">
+                    Started:{" "}
+                    {new Date(state.timer.startTimeUtc).toLocaleString()} (your
+                    local time)
+                  </p>
+                </div>
 
-                    setEntryListVersion((version) => version + 1);
+                <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                  <ElapsedTime
+                    key={`elapsed-${state.timer.id}`}
+                    startTimeUtc={state.timer.startTimeUtc}
+                  />
 
-                    setState({ status: "loading" });
-                    setAttempt((value) => value + 1);
-                  }}
-                  onRefreshRequired={() => {
-                    setNotice("");
-                    setState({ status: "loading" });
-                    setAttempt((value) => value + 1);
-                  }}
-                />
+                  <StopTimerButton
+                    key={`stop-${state.timer.id}`}
+                    timerId={state.timer.id}
+                    onSessionExpired={onSessionExpired}
+                    onStopped={(entry) => {
+                      setNotice(
+                        `Saved ${entry.durationMinutes.toFixed(2)} minutes for ${entry.clientName}.`,
+                      );
+
+                      setEntryListVersion((version) => version + 1);
+                      setState({ status: "loading" });
+                      setAttempt((value) => value + 1);
+                    }}
+                    onRefreshRequired={() => {
+                      setNotice("");
+                      setState({ status: "loading" });
+                      setAttempt((value) => value + 1);
+                    }}
+                  />
+                </div>
               </div>
             ) : state.clients.length > 0 ? (
               <StartTimerForm
@@ -180,44 +246,34 @@ export default function TimeTrackingPage({
                 }}
               />
             ) : (
-              <p>No timer is currently running.</p>
-            )}
-
-            <p>
-              {state.clients.length} active clients available for new timers.
-            </p>
-
-            {state.clients.length === 0 && (
-              <p>
-                An administrator must add or restore a client before you can
-                start a new timer.
+              <p className="text-sm text-slate-500">
+                No timer is running. An administrator must add or restore a
+                client before you can start a new timer.
               </p>
             )}
-          </div>
+          </>
         )}
-      </div>
-      {state.status === "ready" && (
-        <div className="mt-8">
-          <CreateTimeEntryForm
-            clients={state.clients}
-            onSessionExpired={onSessionExpired}
-            onCreated={(entry) => {
-              setNotice(
-                `Saved ${entry.durationMinutes.toFixed(2)} minutes for ${entry.clientName}.`,
-              );
+      </section>
 
-              setEntryListVersion((version) => version + 1);
-            }}
-          />
-        </div>
-      )}
-      <div className="mt-10">
-        <TimeEntryList
-          currentUser={currentUser}
-          refreshVersion={entryListVersion}
+      {state.status === "ready" && (
+        <CreateTimeEntryForm
+          clients={state.clients}
           onSessionExpired={onSessionExpired}
+          onCreated={(entry) => {
+            setNotice(
+              `Saved ${entry.durationMinutes.toFixed(2)} minutes for ${entry.clientName}.`,
+            );
+
+            setEntryListVersion((version) => version + 1);
+          }}
         />
-      </div>
+      )}
+
+      <TimeEntryList
+        currentUser={currentUser}
+        refreshVersion={entryListVersion}
+        onSessionExpired={onSessionExpired}
+      />
     </section>
   );
 }

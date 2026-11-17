@@ -1,3 +1,4 @@
+import { Download, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import type { TimeEntryQuery } from "../api/timeEntries";
 
@@ -90,23 +91,37 @@ export default function ExportTimeEntriesButton({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="shrink-0 space-y-2 self-start">
       <button
         type="button"
         onClick={handleExport}
         disabled={isExporting}
-        className="rounded-lg border border-brand-navy/30
-                   px-4 py-2 text-sm font-medium text-brand-navy
-                   focus-visible:outline-2
-                   focus-visible:outline-offset-2
-                   focus-visible:outline-brand-navy
-                   disabled:cursor-not-allowed disabled:opacity-60"
+        aria-busy={isExporting}
+        className="inline-flex h-9 items-center justify-center
+                 gap-1.5 whitespace-nowrap rounded-xl border
+                 border-slate-200 bg-white px-3.5
+                 text-xs font-semibold text-slate-700
+                 transition-colors hover:bg-slate-50
+                 focus-visible:outline-2
+                 focus-visible:outline-offset-2
+                 focus-visible:outline-brand-indigo
+                 disabled:opacity-60"
       >
-        {isExporting ? "Exporting…" : "Export CSV"}
+        {isExporting ? (
+          <LoaderCircle
+            size={14}
+            aria-hidden="true"
+            className="animate-spin text-slate-500"
+          />
+        ) : (
+          <Download size={14} aria-hidden="true" className="text-slate-500" />
+        )}
+
+        <span>{isExporting ? "Exporting…" : "Export CSV"}</span>
       </button>
 
       {error && (
-        <p role="alert" className="text-brand-red">
+        <p role="alert" className="max-w-xs text-xs text-rose-600">
           {error}
         </p>
       )}

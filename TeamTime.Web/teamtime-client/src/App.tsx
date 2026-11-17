@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { ApiError } from "./api/http";
 import { getCurrentUser, logout } from "./api/auth";
@@ -34,6 +35,8 @@ function App() {
     setLogoutError("");
     setSession({ status: "signedOut" });
   }, []);
+
+  const [showAddClient, setShowAddClient] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,36 +118,87 @@ function App() {
           <Route
             path="/clients"
             element={
-              <section aria-labelledby="clients-heading">
-                <h1 id="clients-heading" className="text-2xl font-semibold">
-                  Clients
-                </h1>
-
-                <p className="mt-2">View the clients your team works with.</p>
-
-                {session.user.roles.includes("Admin") && (
-                  <div className="mt-6">
-                    <CreateClientForm
-                      onSessionExpired={handleSessionExpired}
-                      onCreated={(client) => {
-                        setClientNotice(`${client.name} was added.`);
-                        setClientListVersion((version) => version + 1);
-                      }}
-                    />
-                  </div>
-                )}
-
-                <p role="status" className="mt-4">
+              <section aria-labelledby="clients-heading" className="space-y-6">
+                <p
+                  role="status"
+                  className={
+                    clientNotice
+                      ? "rounded-xl border border-emerald-200 bg-emerald-50 " +
+                        "px-4 py-3 text-xs text-emerald-800"
+                      : "sr-only"
+                  }
+                >
                   {clientNotice}
                 </p>
 
-                <div className="mt-6">
-                  <ClientList
-                    key={clientListVersion}
-                    canManage={session.user.roles.includes("Admin")}
-                    onSessionExpired={handleSessionExpired}
-                  />
-                </div>
+                <ClientList
+                  key={clientListVersion}
+                  canManage={session.user.roles.includes("Admin")}
+                  onSessionExpired={handleSessionExpired}
+                  header={
+                    <>
+                      <div
+                        className="flex flex-col justify-between gap-4
+                   sm:flex-row sm:items-center"
+                      >
+                        <div>
+                          <h1
+                            id="clients-heading"
+                            className="font-display text-xl font-bold
+                       tracking-tight text-slate-900"
+                          >
+                            Clients
+                          </h1>
+
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            View the clients your team works with.
+                          </p>
+                        </div>
+
+                        {session.user.roles.includes("Admin") && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAddClient(true)}
+                            disabled={showAddClient}
+                            aria-expanded={showAddClient}
+                            aria-controls="add-client-drawer"
+                            className="inline-flex h-10 items-center justify-center
+                       gap-2 self-start rounded-xl bg-brand-coral
+                       px-4 text-sm font-semibold text-white
+                       shadow-xs hover:bg-brand-coral-hover
+                       focus-visible:outline-2
+                       focus-visible:outline-offset-2
+                       focus-visible:outline-brand-indigo
+                       disabled:opacity-60"
+                          >
+                            <Plus size={16} aria-hidden="true" />
+                            Add client
+                          </button>
+                        )}
+                      </div>
+
+                      {session.user.roles.includes("Admin") && (
+                        <div
+                          id="add-client-drawer"
+                          hidden={!showAddClient}
+                          className="mt-4 border-t border-slate-200/80 pt-4"
+                        >
+                          {showAddClient && (
+                            <CreateClientForm
+                              onSessionExpired={handleSessionExpired}
+                              onCancel={() => setShowAddClient(false)}
+                              onCreated={(client) => {
+                                setShowAddClient(false);
+                                setClientNotice(`${client.name} was added.`);
+                                setClientListVersion((version) => version + 1);
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </>
+                  }
+                />
               </section>
             }
           />

@@ -1,3 +1,4 @@
+import { RefreshCw, Square } from "lucide-react";
 import { useState } from "react";
 import { ApiError } from "../api/http";
 import { stopTimer } from "../api/timers";
@@ -63,7 +64,7 @@ export default function StopTimerButton({
   return (
     <div className="space-y-3">
       {error && (
-        <p role="alert" className="text-brand-red">
+        <p role="alert" className="max-w-sm text-xs text-rose-600">
           {error}
         </p>
       )}
@@ -72,12 +73,15 @@ export default function StopTimerButton({
         <button
           type="button"
           onClick={onRefreshRequired}
-          className="rounded-lg bg-brand-orange px-5 py-3
-                     text-sm font-semibold text-brand-navy
-                     focus-visible:outline-2
-                     focus-visible:outline-offset-2
-                     focus-visible:outline-brand-navy"
+          className="inline-flex min-h-10 items-center justify-center
+                   gap-2 rounded-xl bg-brand-coral px-4 py-2
+                   text-sm font-semibold text-white shadow-xs
+                   transition-colors hover:bg-brand-coral-hover
+                   focus-visible:outline-2
+                   focus-visible:outline-offset-2
+                   focus-visible:outline-brand-indigo"
         >
+          <RefreshCw size={16} aria-hidden="true" />
           Refresh timer status
         </button>
       ) : (
@@ -85,13 +89,17 @@ export default function StopTimerButton({
           type="button"
           onClick={handleStop}
           disabled={isStopping}
-          className="rounded-lg bg-brand-red px-5 py-3
-                     text-sm font-semibold text-brand-white
-                     focus-visible:outline-2
-                     focus-visible:outline-offset-2
-                     focus-visible:outline-brand-navy
-                     disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center justify-center
+                   gap-2 rounded-xl bg-rose-600 px-4
+                   text-sm font-semibold text-white shadow-xs
+                   transition-all hover:bg-rose-700
+                   active:scale-[0.99]
+                   focus-visible:outline-2
+                   focus-visible:outline-offset-2
+                   focus-visible:outline-rose-600
+                   disabled:opacity-60"
         >
+          <Square size={16} aria-hidden="true" />
           {isStopping ? "Stopping…" : "Stop timer"}
         </button>
       )}

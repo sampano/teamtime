@@ -1,3 +1,4 @@
+import { Play, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { ApiError } from "../api/http";
@@ -79,101 +80,112 @@ export default function StartTimerForm({
   return (
     <form
       onSubmit={handleSubmit}
-      aria-labelledby="start-timer-heading"
+      aria-label="Start tracking"
       aria-busy={isSubmitting}
-      className="space-y-5"
+      className="space-y-3"
     >
-      <h2 id="start-timer-heading" className="text-lg font-semibold">
-        Start tracking
-      </h2>
+      <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-12">
+        <div className="md:col-span-4">
+          <label
+            htmlFor="timer-client"
+            className="mb-1.5 block text-xs font-semibold text-slate-700"
+          >
+            Client
+          </label>
 
-      <div>
-        <label
-          htmlFor="timer-client"
-          className="mb-2 block text-sm font-medium"
-        >
-          Client
-        </label>
-
-        <select
-          id="timer-client"
-          required
-          value={clientId}
-          onChange={(event) => setClientId(event.target.value)}
-          disabled={isSubmitting || needsRefresh}
-          className="w-full rounded-lg border border-brand-navy/30
-                     bg-brand-white px-3 py-3 text-sm
-                     focus-visible:outline-2
-                     focus-visible:outline-brand-navy
+          <select
+            id="timer-client"
+            required
+            value={clientId}
+            onChange={(event) => setClientId(event.target.value)}
+            disabled={isSubmitting || needsRefresh}
+            className="h-10 w-full rounded-xl border border-slate-200
+                     bg-slate-50/60 px-3.5 text-sm text-slate-800
+                     transition-colors focus:border-brand-indigo
+                     focus:bg-white focus:outline-none
+                     focus:ring-2 focus:ring-brand-indigo/20
                      disabled:opacity-60"
-        >
-          <option value="">Select a client</option>
+          >
+            <option value="">Select a client</option>
 
-          {clients
-            .filter((client) => client.isActive)
-            .map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
-        </select>
-      </div>
+            {clients
+              .filter((client) => client.isActive)
+              .map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+          </select>
+        </div>
 
-      <div>
-        <label
-          htmlFor="timer-description"
-          className="mb-2 block text-sm font-medium"
-        >
-          What are you working on?
-        </label>
+        <div className="md:col-span-5">
+          <label
+            htmlFor="timer-description"
+            className="mb-1.5 block text-xs font-semibold text-slate-700"
+          >
+            What are you working on?
+          </label>
 
-        <textarea
-          id="timer-description"
-          required
-          maxLength={500}
-          rows={3}
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          disabled={isSubmitting || needsRefresh}
-          className="w-full rounded-lg border border-brand-navy/30
-                     px-3 py-3 text-sm
-                     focus-visible:outline-2
-                     focus-visible:outline-brand-navy
+          <input
+            id="timer-description"
+            type="text"
+            required
+            maxLength={500}
+            placeholder="Task description..."
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            disabled={isSubmitting || needsRefresh}
+            className="h-10 w-full rounded-xl border border-slate-200
+                     bg-slate-50/60 px-3.5 text-sm text-slate-800
+                     placeholder:text-slate-400
+                     transition-colors focus:border-brand-indigo
+                     focus:bg-white focus:outline-none
+                     focus:ring-2 focus:ring-brand-indigo/20
                      disabled:opacity-60"
-        />
+          />
+        </div>
+
+        <div className="md:col-span-3">
+          {needsRefresh ? (
+            <button
+              type="button"
+              onClick={onRefreshRequired}
+              className="flex min-h-10 w-full items-center justify-center
+                       gap-2 rounded-xl bg-brand-coral px-4 py-2
+                       text-sm font-semibold text-white shadow-xs
+                       transition-colors hover:bg-brand-coral-hover
+                       focus-visible:outline-2
+                       focus-visible:outline-offset-2
+                       focus-visible:outline-brand-indigo"
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              Refresh status
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={isSubmitting || clients.length === 0}
+              className="flex h-10 w-full items-center justify-center
+                       gap-2 rounded-xl bg-brand-coral px-4
+                       text-sm font-semibold text-white shadow-xs
+                       transition-all hover:bg-brand-coral-hover
+                       active:scale-[0.99]
+                       focus-visible:outline-2
+                       focus-visible:outline-offset-2
+                       focus-visible:outline-brand-indigo
+                       disabled:opacity-60"
+            >
+              <Play size={16} aria-hidden="true" />
+              {isSubmitting ? "Starting…" : "Start timer"}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
-        <p role="alert" className="text-brand-red">
+        <p role="alert" className="text-xs text-rose-600">
           {error}
         </p>
-      )}
-
-      {needsRefresh ? (
-        <button
-          type="button"
-          onClick={onRefreshRequired}
-          className="rounded-lg bg-brand-orange px-5 py-3
-                     text-sm font-semibold text-brand-navy
-                     focus-visible:outline-2
-                     focus-visible:outline-offset-2
-                     focus-visible:outline-brand-navy"
-        >
-          Refresh timer status
-        </button>
-      ) : (
-        <button
-          type="submit"
-          disabled={isSubmitting || clients.length === 0}
-          className="rounded-lg bg-brand-orange px-5 py-3
-                     text-sm font-semibold text-brand-navy
-                     focus-visible:outline-2
-                     focus-visible:outline-offset-2
-                     focus-visible:outline-brand-navy
-                     disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSubmitting ? "Starting…" : "Start timer"}
-        </button>
       )}
     </form>
   );

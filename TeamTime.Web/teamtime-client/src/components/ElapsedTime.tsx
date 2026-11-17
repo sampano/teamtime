@@ -49,20 +49,16 @@ export default function ElapsedTime({ startTimeUtc }: ElapsedTimeProps) {
   const elapsedSeconds = Math.max(0, Math.floor((now - start) / 1000));
 
   return (
-    <div className="py-3">
-      <p>Elapsed time</p>
-
-      <div
-        role="timer"
-        aria-label="Elapsed time"
-        aria-live="off"
-        className="mt-2 text-4xl font-semibold
-                   tabular-nums text-brand-navy"
-      >
-        {formatElapsedTime(elapsedSeconds)}
-      </div>
-
-      <p className="mt-1 text-brand-navy/70">Hours : Minutes : Seconds</p>
+    <div
+      role="timer"
+      aria-label="Elapsed time in hours, minutes, and seconds"
+      aria-live="off"
+      className="inline-flex items-center justify-center rounded-xl
+               border border-indigo-200 bg-indigo-50/80
+               px-3 py-2 font-mono text-base font-bold
+               tabular-nums text-brand-indigo"
+    >
+      {formatElapsedTime(elapsedSeconds)}
     </div>
   );
 }

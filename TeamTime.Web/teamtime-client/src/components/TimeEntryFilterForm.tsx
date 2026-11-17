@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
 import type { Client } from "../api/clients";
 import type { MemberResponse } from "../api/members";
 import type { TimeEntryQuery } from "../api/timeEntries";
@@ -15,38 +14,48 @@ type TimeEntryFilterFormProps = {
   onApply: (filters: TimeEntryFilters) => void;
 };
 
+type FilterValues = {
+  clientId: string;
+  memberId: string;
+  fromDate: string;
+  throughDate: string;
+};
+
+const emptyValues: FilterValues = {
+  clientId: "",
+  memberId: "",
+  fromDate: "",
+  throughDate: "",
+};
+
 export default function TimeEntryFilterForm({
   clients,
   members,
   onApply,
 }: TimeEntryFilterFormProps) {
-  const [clientId, setClientId] = useState("");
-  const [memberId, setMemberId] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [throughDate, setThroughDate] = useState("");
+  const [values, setValues] = useState<FilterValues>(emptyValues);
   const [error, setError] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function applyValues(next: FilterValues) {
     setError("");
 
-    if (fromDate && throughDate && throughDate < fromDate) {
+    if (next.fromDate && next.throughDate && next.throughDate < next.fromDate) {
       setError("The end date cannot be before the start date.");
       return;
     }
 
     const filters: TimeEntryFilters = {};
 
-    if (clientId) {
-      filters.clientId = Number(clientId);
+    if (next.clientId) {
+      filters.clientId = Number(next.clientId);
     }
 
-    if (memberId) {
-      filters.memberId = memberId;
+    if (next.memberId) {
+      filters.memberId = next.memberId;
     }
 
-    if (fromDate) {
-      const from = new Date(`${fromDate}T00:00:00`);
+    if (next.fromDate) {
+      const from = new Date(`${next.fromDate}T00:00:00`);
 
       if (!Number.isFinite(from.getTime())) {
         setError("Choose a valid start date.");
@@ -56,55 +65,69 @@ export default function TimeEntryFilterForm({
       filters.fromUtc = from.toISOString();
     }
 
-    if (throughDate) {
-      const until = new Date(`${throughDate}T00:00:00`);
+    if (next.throughDate) {
+      const until = new Date(`${next.throughDate}T00:00:00`);
 
       if (!Number.isFinite(until.getTime())) {
         setError("Choose a valid end date.");
         return;
       }
 
-      // Include the selected end date by using the next local midnight.
       until.setDate(until.getDate() + 1);
+
+      if (!Number.isFinite(until.getTime())) {
+        setError("Choose a valid end date.");
+        return;
+      }
+
       filters.toUtc = until.toISOString();
     }
 
     onApply(filters);
   }
 
+  function updateValue(field: keyof FilterValues, value: string) {
+    const next = { ...values, [field]: value };
+    setValues(next);
+    applyValues(next);
+  }
+
   function handleClear() {
-    setClientId("");
-    setMemberId("");
-    setFromDate("");
-    setThroughDate("");
+    setValues(emptyValues);
     setError("");
     onApply({});
   }
 
   const fieldClassName =
-    "w-full rounded-lg border border-brand-navy/30 " +
-    "bg-brand-white px-3 py-3 text-sm " +
-    "focus-visible:outline-2 focus-visible:outline-brand-navy";
+    "h-9 w-full min-w-0 rounded-xl border border-slate-200 " +
+    "bg-slate-50/50 px-3 text-xs text-slate-800 " +
+    "focus:border-brand-indigo focus:outline-none " +
+    "focus:ring-2 focus:ring-brand-indigo/15";
+
+  const labelClassName = "mb-1 block text-xs font-semibold text-slate-700";
 
   return (
     <form
-      onSubmit={handleSubmit}
       aria-label="Filter time entries"
-      className="rounded-xl border border-brand-navy/15 p-5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        applyValues(values);
+      }}
+      className="space-y-3"
     >
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div>
-          <label
-            htmlFor="filter-client"
-            className="mb-2 block text-sm font-medium"
-          >
+      <div
+        className="grid grid-cols-1 gap-3 pt-2
+                   sm:grid-cols-2 lg:grid-cols-4"
+      >
+        <div className="min-w-0">
+          <label htmlFor="filter-client" className={labelClassName}>
             Client
           </label>
 
           <select
             id="filter-client"
-            value={clientId}
-            onChange={(event) => setClientId(event.target.value)}
+            value={values.clientId}
+            onChange={(event) => updateValue("clientId", event.target.value)}
             className={fieldClassName}
           >
             <option value="">All clients</option>
@@ -118,18 +141,15 @@ export default function TimeEntryFilterForm({
           </select>
         </div>
 
-        <div>
-          <label
-            htmlFor="filter-member"
-            className="mb-2 block text-sm font-medium"
-          >
+        <div className="min-w-0">
+          <label htmlFor="filter-member" className={labelClassName}>
             Team member
           </label>
 
           <select
             id="filter-member"
-            value={memberId}
-            onChange={(event) => setMemberId(event.target.value)}
+            value={values.memberId}
+            onChange={(event) => updateValue("memberId", event.target.value)}
             className={fieldClassName}
           >
             <option value="">All team members</option>
@@ -143,75 +163,57 @@ export default function TimeEntryFilterForm({
           </select>
         </div>
 
-        <div>
-          <label
-            htmlFor="filter-from"
-            className="mb-2 block text-sm font-medium"
-          >
+        <div className="min-w-0">
+          <label htmlFor="filter-from" className={labelClassName}>
             From date
           </label>
 
           <input
             id="filter-from"
             type="date"
-            value={fromDate}
-            onChange={(event) => setFromDate(event.target.value)}
+            value={values.fromDate}
+            onChange={(event) => updateValue("fromDate", event.target.value)}
             className={fieldClassName}
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="filter-through"
-            className="mb-2 block text-sm font-medium"
-          >
+        <div className="min-w-0">
+          <label htmlFor="filter-through" className={labelClassName}>
             Through date
           </label>
 
           <input
             id="filter-through"
             type="date"
-            value={throughDate}
-            onChange={(event) => setThroughDate(event.target.value)}
+            value={values.throughDate}
+            onChange={(event) => updateValue("throughDate", event.target.value)}
             className={fieldClassName}
           />
         </div>
       </div>
 
-      <p className="mt-3">
-        Dates use your local timezone and filter when entries started.
-      </p>
-
-      {error && (
-        <p role="alert" className="mt-3 text-brand-red">
-          {error}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <p className="text-[11px] text-slate-400">
+          Dates use your local timezone and filter when entries started.
         </p>
-      )}
-
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          type="submit"
-          className="rounded-lg bg-brand-orange px-4 py-2
-                     text-sm font-semibold text-brand-navy
-                     focus-visible:outline-2
-                     focus-visible:outline-offset-2
-                     focus-visible:outline-brand-navy"
-        >
-          Apply filters
-        </button>
 
         <button
           type="button"
           onClick={handleClear}
-          className="rounded-lg border border-brand-navy/30
-                     px-4 py-2 text-sm
-                     focus-visible:outline-2
+          className="rounded text-xs font-semibold text-brand-indigo
+                     hover:underline focus-visible:outline-2
                      focus-visible:outline-offset-2
-                     focus-visible:outline-brand-navy"
+                     focus-visible:outline-brand-indigo"
         >
           Clear filters
         </button>
       </div>
+
+      {error && (
+        <p role="alert" className="text-xs text-rose-600">
+          {error} The previous valid filters remain applied.
+        </p>
+      )}
     </form>
   );
 }
