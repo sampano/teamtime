@@ -1,0 +1,42 @@
+# .NET build output
+**/bin/
+**/obj/
+
+# IDE settings
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Frontend dependencies and build output
+**/node_modules/
+**/dist/
+**/coverage/
+*.tsbuildinfo
+
+# Local environment files
+.env
+.env.*
+!.env.example
+**/appsettings.Local.json
+**/appsettings.*.Local.json
+
+# Logs
+*.log
+
+# Database files and backups
+*.mdf
+*.ldf
+*.bak
+
+# Local certificates
+*.pfx
+*.p12
+*.key
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+/TeamTime.Web/package-lock.json
