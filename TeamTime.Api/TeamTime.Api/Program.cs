@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 using Scalar.AspNetCore;
 using TeamTime.Api.Data;
 using TeamTime.Api.Models;
@@ -9,6 +12,30 @@ using TeamTime.Api.Services;
 using TeamTime.Api.Security;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (builder.Environment.IsProduction())
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(
+            new DirectoryInfo("/app/keys"))
+        .SetApplicationName("TeamTime");
+}
+
+if (builder.Environment.IsProduction())
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor |
+            ForwardedHeaders.XForwardedProto;
+
+        options.KnownProxies.Add(
+            IPAddress.Parse(
+                builder.Configuration["ReverseProxy:KnownProxy"]
+                ?? throw new InvalidOperationException(
+                    "Reverse proxy IP address is not configured.")));
+    });
+}
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -66,6 +93,11 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
 
+    options.Cookie.SecurePolicy =
+        builder.Environment.IsProduction()
+            ? CookieSecurePolicy.Always
+            : CookieSecurePolicy.SameAsRequest;
+
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
 
@@ -75,6 +107,11 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
+
+    options.Cookie.SecurePolicy =
+        builder.Environment.IsProduction()
+            ? CookieSecurePolicy.Always
+            : CookieSecurePolicy.SameAsRequest;
 });
 
 var app = builder.Build();
@@ -84,9 +121,19 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi().AllowAnonymous();
     app.MapScalarApiReference().AllowAnonymous();
+}
 
-    //gives the seeder access to scoped services, including the database context
-    await using var scope = app.Services.CreateAsyncScope();
+// Initialize the database
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider
+        .GetRequiredService<AppDbContext>();
+
+    Console.WriteLine("Starting database migration...");
+
+    await db.Database.MigrateAsync();
+
+    Console.WriteLine("Database migration completed successfully.");
 
     await IdentitySeeder.SeedRolesAsync(
         scope.ServiceProvider);
@@ -94,6 +141,13 @@ if (app.Environment.IsDevelopment())
     await IdentitySeeder.SeedAdminAsync(
         scope.ServiceProvider,
         app.Configuration);
+
+    Console.WriteLine("Identity initialization completed successfully.");
+}
+
+if (app.Environment.IsProduction())
+{
+    app.UseForwardedHeaders();
 }
 
 app.UseHttpsRedirection();
@@ -105,5 +159,8 @@ app.UseAuthorization();
 
 // Connect controller routes to the application.
 app.MapControllers();
+
+app.MapGet("/", () => "TeamTime API is running.")
+    .AllowAnonymous();
 
 app.Run();

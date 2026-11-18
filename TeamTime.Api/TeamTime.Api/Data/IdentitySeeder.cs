@@ -31,7 +31,8 @@ public static class IdentitySeeder
                     result.Errors.Select(error => error.Description));
 
                 throw new InvalidOperationException(
-                    $"Could not create role '{role}': {errors}");
+                    "Configure BootstrapAdmin credentials using User Secrets " +
+                    "or environment variables.");
             }
         }
     }
