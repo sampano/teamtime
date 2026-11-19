@@ -9,6 +9,9 @@ services:
     environment:
       TEAMTIME_PROXY_TOKEN: "${TEAMTIME_PROXY_TOKEN:?Required}"
       NGINX_ENVSUBST_FILTER: "^TEAMTIME_PROXY_TOKEN$"
+    labels:
+      - "traefik.docker.network=coolify"
+      - "traefik.http.middlewares.teamtime-proxy-auth.headers.customrequestheaders.X-TeamTime-Proxy-Token=${TEAMTIME_PROXY_TOKEN:?Required}"
     networks:
       teamtime-private:
         ipv4_address: 10.0.10.10
