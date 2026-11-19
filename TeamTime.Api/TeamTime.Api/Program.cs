@@ -29,21 +29,14 @@ if (builder.Environment.IsProduction())
             ForwardedHeaders.XForwardedFor |
             ForwardedHeaders.XForwardedProto;
 
-        // Coolify Traefik
-        options.KnownProxies.Add(
-            IPAddress.Parse(
-                builder.Configuration["ReverseProxy:KnownProxy"]
-                ?? throw new InvalidOperationException(
-                    "Reverse proxy IP address is not configured.")));
-
-        // Frontend Nginx
+        // Trust only the dedicated Nginx proxy.
         options.KnownProxies.Add(
             IPAddress.Parse(
                 builder.Configuration["ReverseProxy:NginxProxy"]
                 ?? throw new InvalidOperationException(
                     "Nginx proxy IP address is not configured.")));
 
-        options.ForwardLimit = 2;
+        options.ForwardLimit = 1;
     });
 }
 
