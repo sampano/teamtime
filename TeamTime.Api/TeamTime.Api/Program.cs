@@ -64,7 +64,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("UserDatabase")
         ?? throw new InvalidOperationException(
-            "Connection string 'UserDatabase' was not found.")
+            "Connection string 'UserDatabase' was not found."),
+        sqlOptions => sqlOptions.UseCompatibilityLevel(160)
     ));
 
 builder.Services.AddScoped<ClientService>();
