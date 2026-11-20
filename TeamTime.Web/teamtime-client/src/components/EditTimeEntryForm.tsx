@@ -108,6 +108,8 @@ export default function EditTimeEntryForm({
       return;
     }
 
+    // Safe: current time is evaluated during form submission.
+    // eslint-disable-next-line react-hooks/purity
     if (end.getTime() > Date.now()) {
       setError("The entry cannot end in the future.");
       return;

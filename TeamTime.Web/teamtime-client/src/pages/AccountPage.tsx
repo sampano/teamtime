@@ -6,16 +6,20 @@ type AccountPageProps = {
 
 export default function AccountPage({ onSessionExpired }: AccountPageProps) {
   return (
-    <section aria-labelledby="account-heading">
-      <h1 id="account-heading" className="text-2xl font-semibold">
-        Account
-      </h1>
+    <section aria-labelledby="account-heading" className="space-y-6">
+      <div>
+        <h1
+          id="account-heading"
+          className="font-display text-xl font-bold
+                     tracking-tight text-slate-900"
+        >
+          Account
+        </h1>
 
-      <p className="mt-2">Manage your password.</p>
-
-      <div className="mt-6">
-        <ChangePasswordForm onSessionExpired={onSessionExpired} />
+        <p className="mt-0.5 text-xs text-slate-500">Manage your password.</p>
       </div>
+
+      <ChangePasswordForm onSessionExpired={onSessionExpired} />
     </section>
   );
 }

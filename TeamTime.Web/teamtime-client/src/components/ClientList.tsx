@@ -6,6 +6,7 @@ import {
   RotateCcw,
   Search,
 } from "lucide-react";
+import { Link } from "react-router";
 import { getTimeEntrySummary } from "../api/timeEntries";
 import type { ClientTimeSummaryResponse } from "../api/timeEntries";
 import { useEffect, useState } from "react";
@@ -490,6 +491,18 @@ export default function ClientList({
                     </button>
                   </div>
                 )}
+                <div className="mt-3 flex justify-end">
+                  <Link
+                    to={`/time-tracking?clientId=${client.id}#time-entries-heading`}
+                    aria-label={`View time entries for ${client.name}`}
+                    className="rounded text-xs font-semibold text-brand-indigo
+               hover:underline focus-visible:outline-2
+               focus-visible:outline-offset-2
+               focus-visible:outline-brand-indigo"
+                  >
+                    Entries →
+                  </Link>
+                </div>
               </>
             )}
           </li>

@@ -27,21 +27,25 @@ export default function TimeEntrySummary({ summary }: TimeEntrySummaryProps) {
     {
       id: "client-summary-heading",
       title: "By client",
+      barColor: "bg-brand-indigo",
       items: summary.byClient.map((client) => ({
         id: String(client.clientId),
         name: client.clientName,
         entryCount: client.entryCount,
         totalHours: client.totalHours,
+        totalMinutes: client.totalMinutes,
       })),
     },
     {
       id: "member-summary-heading",
       title: "By team member",
+      barColor: "bg-brand-coral",
       items: summary.byMember.map((member) => ({
         id: member.memberId,
         name: member.memberName,
         entryCount: member.entryCount,
         totalHours: member.totalHours,
+        totalMinutes: member.totalMinutes,
       })),
     },
   ];
@@ -105,30 +109,52 @@ export default function TimeEntrySummary({ summary }: TimeEntrySummaryProps) {
               </h4>
 
               <ul className="space-y-2.5">
-                {breakdown.items.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-start justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="break-words text-xs font-medium text-slate-700">
-                        {item.name}
-                      </p>
+                {breakdown.items.map((item) => {
+                  const percentage =
+                    summary.totalMinutes > 0
+                      ? Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            (item.totalMinutes / summary.totalMinutes) * 100,
+                          ),
+                        )
+                      : 0;
 
-                      <p className="mt-0.5 text-[11px] text-slate-400">
-                        {item.entryCount}{" "}
-                        {item.entryCount === 1 ? "entry" : "entries"}
-                      </p>
-                    </div>
+                  return (
+                    <li key={item.id} className="space-y-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 break-words text-xs font-semibold text-slate-800">
+                          {item.name}
+                        </p>
 
-                    <p
-                      className="shrink-0 text-xs font-semibold
-                                 tabular-nums text-brand-indigo"
-                    >
-                      {item.totalHours.toFixed(2)} hrs
-                    </p>
-                  </li>
-                ))}
+                        <p className="shrink-0 text-xs tabular-nums text-slate-600">
+                          {item.totalHours.toFixed(2)} hrs{" "}
+                          <span className="text-slate-400">
+                            ({item.entryCount})
+                          </span>
+                        </p>
+                      </div>
+
+                      <div
+                        role="meter"
+                        aria-label={`${item.name}: share of total filtered time`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Number(percentage.toFixed(1))}
+                        aria-valuetext={`${percentage.toFixed(1)} percent of total filtered time`}
+                        className="h-1.5 w-full overflow-hidden
+                     rounded-full bg-slate-100"
+                      >
+                        <div
+                          aria-hidden="true"
+                          className={`h-full rounded-full ${breakdown.barColor}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))}

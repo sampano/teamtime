@@ -62,27 +62,32 @@ export default function ChangePasswordForm({
   }
 
   const inputClassName =
-    "w-full rounded-lg border border-brand-navy/30 px-3 py-3 " +
-    "text-sm focus-visible:outline-2 " +
-    "focus-visible:outline-brand-navy disabled:opacity-60";
+    "h-10 w-full rounded-xl border border-slate-200 " +
+    "bg-white px-3.5 text-sm text-slate-800 " +
+    "placeholder:text-slate-400 focus:border-brand-indigo " +
+    "focus:outline-none focus:ring-2 focus:ring-brand-indigo/20 " +
+    "disabled:opacity-60";
+
+  const labelClassName = "mb-1.5 block text-xs font-semibold text-slate-700";
 
   return (
     <form
       onSubmit={handleSubmit}
       aria-labelledby="change-password-heading"
       aria-busy={isSubmitting}
-      className="max-w-xl rounded-xl border border-brand-navy/15 p-6"
+      className="w-full max-w-xl space-y-5 rounded-2xl
+               border border-slate-200/80 bg-white p-6 shadow-xs"
     >
-      <h2 id="change-password-heading" className="text-lg font-semibold">
+      <h2
+        id="change-password-heading"
+        className="font-display text-base font-bold text-slate-900"
+      >
         Change password
       </h2>
 
-      <div className="mt-5 space-y-4">
+      <div className="space-y-4">
         <div>
-          <label
-            htmlFor="current-password"
-            className="mb-2 block text-sm font-medium"
-          >
+          <label htmlFor="current-password" className={labelClassName}>
             Current password
           </label>
 
@@ -92,6 +97,7 @@ export default function ChangePasswordForm({
             type="password"
             autoComplete="current-password"
             required
+            placeholder="••••••••••••"
             value={currentPassword}
             onChange={(event) => setCurrentPassword(event.target.value)}
             disabled={isSubmitting}
@@ -100,10 +106,7 @@ export default function ChangePasswordForm({
         </div>
 
         <div>
-          <label
-            htmlFor="new-password"
-            className="mb-2 block text-sm font-medium"
-          >
+          <label htmlFor="new-password" className={labelClassName}>
             New password
           </label>
 
@@ -115,6 +118,7 @@ export default function ChangePasswordForm({
             required
             minLength={12}
             maxLength={128}
+            placeholder="••••••••••••"
             aria-describedby="password-requirements"
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
@@ -122,17 +126,17 @@ export default function ChangePasswordForm({
             className={inputClassName}
           />
 
-          <p id="password-requirements" className="mt-2">
+          <p
+            id="password-requirements"
+            className="mt-1.5 text-[11px] leading-relaxed text-slate-500"
+          >
             Use at least 12 characters, including uppercase, lowercase, a
             number, and a symbol.
           </p>
         </div>
 
         <div>
-          <label
-            htmlFor="confirm-password"
-            className="mb-2 block text-sm font-medium"
-          >
+          <label htmlFor="confirm-password" className={labelClassName}>
             Confirm new password
           </label>
 
@@ -144,6 +148,7 @@ export default function ChangePasswordForm({
             required
             minLength={12}
             maxLength={128}
+            placeholder="••••••••••••"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             disabled={isSubmitting}
@@ -153,27 +158,40 @@ export default function ChangePasswordForm({
       </div>
 
       {error && (
-        <p role="alert" className="mt-4 text-brand-red">
+        <p role="alert" className="text-xs text-rose-600">
           {error}
         </p>
       )}
 
-      <p role="status" className="mt-4">
+      <p
+        role="status"
+        className={
+          notice
+            ? "rounded-xl border border-emerald-200 bg-emerald-50 " +
+              "px-3 py-2 text-xs text-emerald-800"
+            : "sr-only"
+        }
+      >
         {notice}
       </p>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="mt-4 rounded-lg bg-brand-orange px-5 py-3
-                   text-sm font-semibold text-brand-navy
+      <div className="pt-2">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex h-10 items-center justify-center
+                   rounded-xl bg-brand-coral px-5
+                   text-sm font-semibold text-white shadow-xs
+                   transition-all hover:bg-brand-coral-hover
+                   active:scale-[0.99]
                    focus-visible:outline-2
                    focus-visible:outline-offset-2
-                   focus-visible:outline-brand-navy
-                   disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Changing…" : "Change password"}
-      </button>
+                   focus-visible:outline-brand-indigo
+                   disabled:opacity-60"
+        >
+          {isSubmitting ? "Changing…" : "Change password"}
+        </button>
+      </div>
     </form>
   );
 }

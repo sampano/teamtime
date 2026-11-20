@@ -32,6 +32,8 @@ export async function createClient(
     throw new Error("The server did not return the created client.");
   }
 
+  window.dispatchEvent(new Event("teamtime:workspace-changed"));
+
   return client;
 }
 
@@ -71,6 +73,8 @@ export async function updateClientStatus(
   if (client === null) {
     throw new Error("The server did not return the updated client status.");
   }
+
+  window.dispatchEvent(new Event("teamtime:workspace-changed"));
 
   return client;
 }

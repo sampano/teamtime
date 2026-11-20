@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toLocalDateTimeInput } from "../utils/dateTime";
 import type { Client } from "../api/clients";
 import type { MemberResponse } from "../api/members";
 import type { TimeEntryQuery } from "../api/timeEntries";
@@ -12,6 +13,7 @@ type TimeEntryFilterFormProps = {
   clients: Client[];
   members: MemberResponse[];
   onApply: (filters: TimeEntryFilters) => void;
+  appliedFilters?: TimeEntryFilters;
 };
 
 type FilterValues = {
@@ -28,13 +30,56 @@ const emptyValues: FilterValues = {
   throughDate: "",
 };
 
+const emptyFilters: TimeEntryFilters = {};
+
+function valuesFromFilters(filters: TimeEntryFilters): FilterValues {
+  let throughDate = "";
+
+  if (filters.toUtc) {
+    const exclusiveEnd = new Date(filters.toUtc);
+
+    if (Number.isFinite(exclusiveEnd.getTime())) {
+      exclusiveEnd.setDate(exclusiveEnd.getDate() - 1);
+      throughDate = toLocalDateTimeInput(exclusiveEnd.toISOString()).slice(
+        0,
+        10,
+      );
+    }
+  }
+
+  const validFrom =
+    filters.fromUtc && Number.isFinite(Date.parse(filters.fromUtc));
+
+  return {
+    clientId: filters.clientId === undefined ? "" : String(filters.clientId),
+    memberId: filters.memberId ?? "",
+    fromDate: validFrom
+      ? toLocalDateTimeInput(filters.fromUtc!).slice(0, 10)
+      : "",
+    throughDate,
+  };
+}
+
 export default function TimeEntryFilterForm({
   clients,
   members,
   onApply,
+  appliedFilters = emptyFilters,
 }: TimeEntryFilterFormProps) {
-  const [values, setValues] = useState<FilterValues>(emptyValues);
+  const [values, setValues] = useState<FilterValues>(() =>
+    valuesFromFilters(appliedFilters),
+  );
+
+  const [previousAppliedFilters, setPreviousAppliedFilters] =
+    useState(appliedFilters);
+
   const [error, setError] = useState("");
+
+  if (previousAppliedFilters !== appliedFilters) {
+    setPreviousAppliedFilters(appliedFilters);
+    setValues(valuesFromFilters(appliedFilters));
+    setError("");
+  }
 
   function applyValues(next: FilterValues) {
     setError("");

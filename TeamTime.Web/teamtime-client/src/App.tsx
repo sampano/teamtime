@@ -113,6 +113,7 @@ function App() {
         isSigningOut={isSigningOut}
         logoutError={logoutError}
         onLogout={handleLogout}
+        onSessionExpired={handleSessionExpired}
       >
         <Routes>
           <Route

@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { KeyRound, X } from "lucide-react";
+import { Copy, Eye, EyeOff, KeyRound, Sparkles, X } from "lucide-react";
+import {
+  generateStrongPassword,
+  getPasswordRequirements,
+} from "../utils/password";
 import type { FormEvent } from "react";
 import { ApiError } from "../api/http";
 import { resetMemberPassword } from "../api/members";
@@ -22,6 +26,10 @@ export default function ResetMemberPasswordForm({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [copyNotice, setCopyNotice] = useState("");
+  const [isCopying, setIsCopying] = useState(false);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -50,6 +58,61 @@ export default function ResetMemberPasswordForm({
       }
     };
   }, []);
+
+  const passwordRequirements = getPasswordRequirements(newPassword);
+
+  function handleGeneratePassword() {
+    setError("");
+    setCopyNotice("");
+
+    try {
+      const generated = generateStrongPassword();
+      setNewPassword(generated);
+      setConfirmPassword(generated);
+    } catch {
+      setError("Unable to generate a password. Please enter one manually.");
+    }
+  }
+
+  async function handleCopyCredentials() {
+    if (isCopying || isSubmitting) {
+      return;
+    }
+
+    setCopyNotice("");
+
+    if (
+      !passwordRequirements.every((requirement) => requirement.met) ||
+      newPassword !== confirmPassword
+    ) {
+      setCopyNotice(
+        "Enter matching passwords that meet all requirements before copying.",
+      );
+      return;
+    }
+
+    setIsCopying(true);
+
+    try {
+      await navigator.clipboard.writeText(
+        [
+          "TeamTime password reset",
+          `Member: ${member.fullName}`,
+          `Email: ${member.email}`,
+          `New password: ${newPassword}`,
+        ].join("\n"),
+      );
+
+      setCopyNotice(
+        "Draft replacement credentials copied. Complete the reset successfully before sharing them.",
+      );
+    } catch {
+      setCopyNotice("Unable to copy. Use Show password to copy it manually.");
+    } finally {
+      setIsCopying(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -58,6 +121,7 @@ export default function ResetMemberPasswordForm({
     }
 
     setError("");
+    setCopyNotice("");
 
     if (newPassword !== confirmPassword) {
       setError("The new passwords do not match.");
@@ -160,36 +224,111 @@ export default function ResetMemberPasswordForm({
         aria-busy={isSubmitting}
         className="space-y-4 p-5"
       >
-        <div>
-          <label
-            htmlFor={`reset-password-${member.id}`}
-            className="mb-1.5 block text-xs font-semibold text-slate-700"
-          >
-            New password
-          </label>
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label
+              htmlFor={`reset-password-${member.id}`}
+              className="text-xs font-semibold text-slate-700"
+            >
+              New password
+            </label>
 
-          <input
-            id={`reset-password-${member.id}`}
-            name="newPassword"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={12}
-            maxLength={128}
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            aria-describedby={`reset-requirements-${member.id}`}
-            disabled={isSubmitting}
-            className={inputClassName}
-          />
+            <button
+              type="button"
+              onClick={handleGeneratePassword}
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-1 rounded-lg
+                 border border-indigo-200/70 bg-indigo-50
+                 px-2.5 py-1 text-xs font-semibold text-brand-indigo
+                 hover:bg-indigo-100/80
+                 focus-visible:outline-2
+                 focus-visible:outline-brand-indigo
+                 disabled:opacity-60"
+            >
+              <Sparkles size={14} aria-hidden="true" />
+              Generate password
+            </button>
+          </div>
+
+          <div className="relative">
+            <input
+              id={`reset-confirm-password-${member.id}`}
+              name="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              required
+              minLength={12}
+              maxLength={128}
+              value={confirmPassword}
+              onChange={(event) => {
+                setConfirmPassword(event.target.value);
+                setCopyNotice("");
+              }}
+              disabled={isSubmitting}
+              className={`${inputClassName} font-mono`}
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              disabled={isSubmitting}
+              aria-label={showPassword ? "Hide passwords" : "Show passwords"}
+              aria-pressed={showPassword}
+              aria-controls={`reset-password-${member.id} reset-confirm-password-${member.id}`}
+              className="absolute top-1/2 right-2.5 -translate-y-1/2
+                 rounded p-1 text-slate-400 hover:text-slate-600
+                 focus-visible:outline-2
+                 focus-visible:outline-brand-indigo
+                 disabled:opacity-60"
+            >
+              {showPassword ? (
+                <EyeOff size={16} aria-hidden="true" />
+              ) : (
+                <Eye size={16} aria-hidden="true" />
+              )}
+            </button>
+          </div>
 
           <p
             id={`reset-requirements-${member.id}`}
-            className="mt-1.5 text-[11px] leading-relaxed text-slate-500"
+            className="text-[11px] leading-relaxed text-slate-500"
           >
             Use at least 12 characters, including uppercase, lowercase, a
             number, and a symbol.
           </p>
+
+          <ul
+            aria-label="Password requirements"
+            className="grid grid-cols-2 gap-2"
+          >
+            {passwordRequirements.map((requirement) => (
+              <li
+                key={requirement.label}
+                className={
+                  "flex items-center gap-1.5 rounded-lg border " +
+                  "px-2.5 py-1 text-[11px] " +
+                  (requirement.met
+                    ? "border-emerald-200/80 bg-emerald-50 text-emerald-700"
+                    : "border-slate-200/80 bg-white text-slate-500")
+                }
+              >
+                <span
+                  aria-hidden="true"
+                  className={
+                    "h-1.5 w-1.5 shrink-0 rounded-full " +
+                    (requirement.met ? "bg-emerald-500" : "bg-slate-300")
+                  }
+                />
+
+                <span>
+                  {requirement.label}
+                  <span className="sr-only">
+                    {requirement.met ? ": met" : ": not met"}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div>
@@ -214,7 +353,30 @@ export default function ResetMemberPasswordForm({
             className={inputClassName}
           />
         </div>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleCopyCredentials}
+            disabled={isSubmitting || isCopying}
+            className="inline-flex items-center gap-1.5 rounded-lg
+               border border-slate-200 bg-white px-3 py-1.5
+               text-xs font-semibold text-slate-700
+               hover:bg-slate-50
+               focus-visible:outline-2
+               focus-visible:outline-brand-indigo
+               disabled:opacity-60"
+          >
+            <Copy size={14} aria-hidden="true" />
+            {isCopying ? "Copying…" : "Copy credentials"}
+          </button>
 
+          <p
+            role="status"
+            className={copyNotice ? "text-xs text-slate-600" : "sr-only"}
+          >
+            {copyNotice}
+          </p>
+        </div>
         <p
           className="rounded-xl border border-amber-200
                    bg-amber-50 px-3 py-2 text-xs text-amber-800"

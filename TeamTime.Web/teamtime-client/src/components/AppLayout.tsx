@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { NavLink, useLocation } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 import {
   Building2,
   Clock,
@@ -11,11 +11,15 @@ import {
   X,
 } from "lucide-react";
 import type { CurrentUser } from "../api/auth";
+import { getClients } from "../api/clients";
+import { getMembers } from "../api/members";
+import { ApiError } from "../api/http";
 
 type AppLayoutProps = {
   user: CurrentUser;
   isSigningOut: boolean;
   logoutError: string;
+  onSessionExpired: () => void;
   onLogout: () => Promise<void>;
   children: ReactNode;
 };
@@ -52,6 +56,7 @@ export default function AppLayout({
   isSigningOut,
   logoutError,
   onLogout,
+  onSessionExpired,
   children,
 }: AppLayoutProps) {
   const location = useLocation();
@@ -59,6 +64,10 @@ export default function AppLayout({
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
 
+  const [workspaceCounts, setWorkspaceCounts] = useState<{
+    activeClients: number;
+    team: number;
+  } | null>(null);
   const currentPage =
     navigation.find(
       (item) =>
@@ -141,7 +150,55 @@ export default function AppLayout({
       desktopQuery.removeEventListener("change", handleDesktopChange);
     };
   }, [mobileMenuOpen]);
+  useEffect(() => {
+    let cancelled = false;
+    let requestVersion = 0;
 
+    async function loadCounts() {
+      const version = ++requestVersion;
+
+      try {
+        const [clients, members] = await Promise.all([
+          getClients(),
+          getMembers(),
+        ]);
+
+        if (cancelled || version !== requestVersion) {
+          return;
+        }
+
+        setWorkspaceCounts({
+          activeClients: clients.filter((client) => client.isActive).length,
+          team: members.length,
+        });
+      } catch (error) {
+        if (cancelled || version !== requestVersion) {
+          return;
+        }
+
+        setWorkspaceCounts(null);
+
+        if (error instanceof ApiError && error.status === 401) {
+          onSessionExpired();
+        }
+      }
+    }
+
+    function refreshCounts() {
+      void loadCounts();
+    }
+
+    refreshCounts();
+
+    window.addEventListener("focus", refreshCounts);
+    window.addEventListener("teamtime:workspace-changed", refreshCounts);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refreshCounts);
+      window.removeEventListener("teamtime:workspace-changed", refreshCounts);
+    };
+  }, [location.pathname, user.id, onSessionExpired]);
   return (
     <div className="min-h-screen bg-brand-canvas font-sans text-slate-800">
       {mobileMenuOpen && (
@@ -208,6 +265,12 @@ export default function AppLayout({
           <nav aria-label="Main navigation" className="space-y-1.5 px-3.5 py-5">
             {navigation.map((item) => {
               const Icon = item.icon;
+              const count =
+                item.to === "/clients"
+                  ? workspaceCounts?.activeClients
+                  : item.to === "/team"
+                    ? workspaceCounts?.team
+                    : undefined;
 
               return (
                 <NavLink
@@ -229,8 +292,28 @@ export default function AppLayout({
                       : "text-indigo-100/80 hover:bg-white/10 hover:text-white")
                   }
                 >
-                  <Icon size={16} aria-hidden="true" className="shrink-0" />
-                  <span>{item.label}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-3">
+                    <Icon size={16} aria-hidden="true" className="shrink-0" />
+                    <span>{item.label}</span>
+                  </span>
+
+                  {count !== undefined && (
+                    <span
+                      aria-label={
+                        item.to === "/clients"
+                          ? `${count} active clients`
+                          : `${count} team accounts`
+                      }
+                      className={
+                        "rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums " +
+                        (location.pathname === item.to
+                          ? "bg-black/15 text-white"
+                          : "bg-white/10 text-indigo-100")
+                      }
+                    >
+                      {count}
+                    </span>
+                  )}
                 </NavLink>
               );
             })}
@@ -348,6 +431,24 @@ export default function AppLayout({
               </span>
             </div>
           </div>
+          {workspaceCounts !== null && (
+            <Link
+              to="/time-tracking"
+              className="hidden shrink-0 items-center gap-1.5 rounded-full
+               border border-emerald-200/80 bg-emerald-50
+               px-2.5 py-1 text-xs font-medium text-emerald-700
+               transition-colors hover:bg-emerald-100/80
+               focus-visible:outline-2
+               focus-visible:outline-brand-indigo xl:inline-flex"
+            >
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+              />
+              {workspaceCounts.activeClients} active clients available for new
+              timers
+            </Link>
+          )}
         </header>
 
         <main

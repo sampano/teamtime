@@ -1,9 +1,13 @@
-import { Check, Lock, X } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Lock, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { ApiError } from "../api/http";
 import { createMember } from "../api/members";
 import type { MemberResponse } from "../api/members";
+import {
+  generateStrongPassword,
+  getPasswordRequirements,
+} from "../utils/password";
 
 type CreateMemberFormProps = {
   onCreated: (member: MemberResponse) => void;
@@ -22,6 +26,65 @@ export default function CreateMemberForm({
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [copyNotice, setCopyNotice] = useState("");
+  const [isCopying, setIsCopying] = useState(false);
+
+  const passwordRequirements = getPasswordRequirements(password);
+
+  function handleGeneratePassword() {
+    setCopyNotice("");
+    setError("");
+
+    try {
+      setPassword(generateStrongPassword());
+    } catch {
+      setError("Unable to generate a password. Please enter one manually.");
+    }
+  }
+
+  async function handleCopyCredentials() {
+    if (isCopying) {
+      return;
+    }
+
+    setCopyNotice("");
+
+    if (
+      !fullName.trim() ||
+      !email.trim() ||
+      !passwordRequirements.every((requirement) => requirement.met)
+    ) {
+      setCopyNotice(
+        "Enter the member's name, email, and a password meeting all requirements.",
+      );
+      return;
+    }
+
+    setIsCopying(true);
+
+    try {
+      await navigator.clipboard.writeText(
+        [
+          "TeamTime account credentials",
+          `Member: ${fullName.trim()}`,
+          `Email: ${email.trim()}`,
+          `Password: ${password}`,
+        ].join("\n"),
+      );
+
+      setCopyNotice(
+        "Draft credentials copied. Create the account successfully before sharing them.",
+      );
+    } catch {
+      setCopyNotice(
+        "Unable to copy credentials. You can use Show password to copy them manually.",
+      );
+    } finally {
+      setIsCopying(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -30,6 +93,7 @@ export default function CreateMemberForm({
     }
 
     setError("");
+    setCopyNotice("");
 
     if (!fullName.trim()) {
       setError("Full name is required.");
@@ -53,6 +117,7 @@ export default function CreateMemberForm({
       setFullName("");
       setEmail("");
       setPassword("");
+      setShowPassword(false);
       onCreated(member);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -140,7 +205,10 @@ export default function CreateMemberForm({
               maxLength={200}
               placeholder="e.g. Jordan Lee"
               value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
+              onChange={(event) => {
+                setFullName(event.target.value);
+                setCopyNotice("");
+              }}
               className={fieldClassName}
             />
           </div>
@@ -159,31 +227,94 @@ export default function CreateMemberForm({
               maxLength={256}
               placeholder="jordan@example.com"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setCopyNotice("");
+              }}
               className={fieldClassName}
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="member-password" className={labelClassName}>
-            Initial password
-          </label>
+          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+            <label
+              htmlFor="member-password"
+              className="text-xs font-semibold text-slate-700"
+            >
+              Initial password
+            </label>
 
-          <input
-            id="member-password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={12}
-            maxLength={128}
-            placeholder="At least 12 characters..."
-            aria-describedby="member-password-help"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className={fieldClassName}
-          />
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                className="inline-flex items-center gap-1 rounded-lg
+                   border border-indigo-200/70 bg-indigo-50
+                   px-2.5 py-1 text-xs font-semibold text-brand-indigo
+                   hover:bg-indigo-100/80
+                   focus-visible:outline-2
+                   focus-visible:outline-brand-indigo"
+              >
+                <Sparkles size={14} aria-hidden="true" />
+                Generate strong password
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyCredentials}
+                disabled={isCopying}
+                className="inline-flex items-center gap-1 rounded-lg
+                   border border-slate-200 bg-white px-2.5 py-1
+                   text-xs font-semibold text-slate-700
+                   hover:bg-slate-100
+                   focus-visible:outline-2
+                   focus-visible:outline-brand-indigo
+                   disabled:opacity-60"
+              >
+                <Copy size={14} aria-hidden="true" className="text-slate-500" />
+                {isCopying ? "Copying…" : "Copy credentials"}
+              </button>
+            </div>
+          </div>
+
+          <div className="relative">
+            <input
+              id="member-password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              required
+              minLength={12}
+              maxLength={128}
+              placeholder="At least 12 characters..."
+              aria-describedby="member-password-help"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setCopyNotice("");
+              }}
+              className={`${fieldClassName} pr-10 font-mono placeholder:font-sans`}
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              aria-controls="member-password"
+              className="absolute top-1/2 right-2.5 -translate-y-1/2
+                 rounded p-1 text-slate-400 hover:text-slate-600
+                 focus-visible:outline-2
+                 focus-visible:outline-brand-indigo"
+            >
+              {showPassword ? (
+                <EyeOff size={16} aria-hidden="true" />
+              ) : (
+                <Eye size={16} aria-hidden="true" />
+              )}
+            </button>
+          </div>
 
           <p
             id="member-password-help"
@@ -191,6 +322,45 @@ export default function CreateMemberForm({
           >
             Use at least 12 characters, including uppercase, lowercase, a
             number, and a symbol.
+          </p>
+
+          <ul
+            aria-label="Password requirements"
+            className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4"
+          >
+            {passwordRequirements.map((requirement) => (
+              <li
+                key={requirement.label}
+                className={
+                  "flex items-center gap-1.5 rounded-lg border " +
+                  "px-2.5 py-1 text-[11px] " +
+                  (requirement.met
+                    ? "border-emerald-200/80 bg-emerald-50 text-emerald-700"
+                    : "border-slate-200/80 bg-white text-slate-500")
+                }
+              >
+                <span
+                  aria-hidden="true"
+                  className={
+                    "h-1.5 w-1.5 shrink-0 rounded-full " +
+                    (requirement.met ? "bg-emerald-500" : "bg-slate-300")
+                  }
+                />
+                <span>
+                  {requirement.label}
+                  <span className="sr-only">
+                    {requirement.met ? ": met" : ": not met"}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <p
+            role="status"
+            className={copyNotice ? "mt-2 text-xs text-slate-600" : "sr-only"}
+          >
+            {copyNotice}
           </p>
         </div>
 

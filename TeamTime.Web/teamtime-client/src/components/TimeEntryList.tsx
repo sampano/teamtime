@@ -1,5 +1,6 @@
 import { FileText, Pencil } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { ApiError } from "../api/http";
 import { getTimeEntries, getTimeEntrySummary } from "../api/timeEntries";
 import type {
@@ -51,10 +52,49 @@ export default function TimeEntryList({
     status: "loading",
   });
 
-  const [page, setPage] = useState(1);
+  //const [page, setPage] = useState(1);
   const [attempt, setAttempt] = useState(0);
 
-  const [filters, setFilters] = useState<TimeEntryFilters>({});
+  //const [filters, setFilters] = useState<TimeEntryFilters>({});
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryString = searchParams.toString();
+
+  const filters = useMemo<TimeEntryFilters>(() => {
+    const parameters = new URLSearchParams(queryString);
+    const result: TimeEntryFilters = {};
+
+    const clientId = parameters.get("clientId");
+    const memberId = parameters.get("memberId");
+    const fromUtc = parameters.get("fromUtc");
+    const toUtc = parameters.get("toUtc");
+
+    if (clientId !== null) {
+      result.clientId = Number(clientId);
+    }
+
+    if (memberId !== null) {
+      result.memberId = memberId;
+    }
+
+    if (fromUtc !== null) {
+      result.fromUtc = fromUtc;
+    }
+
+    if (toUtc !== null) {
+      result.toUtc = toUtc;
+    }
+
+    return result;
+  }, [queryString]);
+
+  const requestedPage = Number(searchParams.get("page") ?? "1");
+
+  const page =
+    Number.isSafeInteger(requestedPage) && requestedPage >= 1
+      ? requestedPage
+      : 1;
+
+  const [previousQueryString, setPreviousQueryString] = useState(queryString);
 
   const [filterOptions, setFilterOptions] = useState<FilterOptionsState>({
     status: "loading",
@@ -67,6 +107,13 @@ export default function TimeEntryList({
   );
 
   const [editNotice, setEditNotice] = useState("");
+
+  if (previousQueryString !== queryString) {
+    setPreviousQueryString(queryString);
+    setState({ status: "loading" });
+    setEditingEntry(null);
+    setEditNotice("");
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -160,8 +207,45 @@ export default function TimeEntryList({
   }, [page, attempt, filters, refreshVersion, onSessionExpired]);
 
   function changePage(nextPage: number) {
-    setState({ status: "loading" });
-    setPage(nextPage);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+
+      if (nextPage === 1) {
+        next.delete("page");
+      } else {
+        next.set("page", String(nextPage));
+      }
+
+      return next;
+    });
+  }
+
+  function applyFilters(nextFilters: TimeEntryFilters) {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+
+      for (const key of ["clientId", "memberId", "fromUtc", "toUtc", "page"]) {
+        next.delete(key);
+      }
+
+      if (nextFilters.clientId !== undefined) {
+        next.set("clientId", String(nextFilters.clientId));
+      }
+
+      if (nextFilters.memberId !== undefined) {
+        next.set("memberId", nextFilters.memberId);
+      }
+
+      if (nextFilters.fromUtc !== undefined) {
+        next.set("fromUtc", nextFilters.fromUtc);
+      }
+
+      if (nextFilters.toUtc !== undefined) {
+        next.set("toUtc", nextFilters.toUtc);
+      }
+
+      return next;
+    });
   }
 
   return (
@@ -234,11 +318,8 @@ export default function TimeEntryList({
             <TimeEntryFilterForm
               clients={filterOptions.clients}
               members={filterOptions.members}
-              onApply={(nextFilters) => {
-                setState({ status: "loading" });
-                setPage(1);
-                setFilters(nextFilters);
-              }}
+              appliedFilters={filters}
+              onApply={applyFilters}
             />
           )}
         </div>
