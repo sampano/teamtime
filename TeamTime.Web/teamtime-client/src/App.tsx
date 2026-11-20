@@ -5,6 +5,7 @@ import { getCurrentUser, logout } from "./api/auth";
 import type { CurrentUser } from "./api/auth";
 import LoginForm from "./components/LoginForm";
 import AppLayout from "./components/AppLayout";
+import ClientReportPage from "./pages/ClientReportPage";
 import ClientList from "./components/ClientList";
 import CreateClientForm from "./components/CreateClientForm";
 import { Navigate, Route, Routes } from "react-router";
@@ -18,7 +19,7 @@ type SessionState =
   | { status: "signedIn"; user: CurrentUser }
   | { status: "error"; message: string };
 
-function App() {
+function WorkspaceApp() {
   const [session, setSession] = useState<SessionState>({
     status: "loading",
   });
@@ -270,4 +271,14 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/reports/:token" element={<ClientReportPage />} />
+
+      <Route path="/reports" element={<ClientReportPage />} />
+
+      <Route path="/*" element={<WorkspaceApp />} />
+    </Routes>
+  );
+}

@@ -17,6 +17,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<RunningTimer> RunningTimers => Set<RunningTimer>();
 
+    public DbSet<ClientReportShare> ClientReportShares =>
+    Set<ClientReportShare>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -100,6 +103,51 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany()
                 .HasForeignKey(timer => timer.ClientId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ClientReportShare>(entity =>
+        {
+            entity.HasKey(share => share.Id);
+
+            entity.Property(share => share.TokenHash)
+                .IsRequired()
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .IsFixedLength();
+
+            entity.HasIndex(share => share.TokenHash)
+                .IsUnique();
+
+            entity.HasIndex(share => new
+            {
+                share.ClientId,
+                share.CreatedAtUtc
+            });
+
+            entity.HasOne(share => share.Client)
+                .WithMany()
+                .HasForeignKey(share => share.ClientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(share => share.CreatedByMember)
+                .WithMany()
+                .HasForeignKey(share => share.CreatedByMemberId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.ToTable("ClientReportShares", table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_ClientReportShares_ValidDateRange",
+                    "[FromUtc] IS NULL OR [ToUtc] IS NULL OR [ToUtc] > [FromUtc]");
+
+                table.HasCheckConstraint(
+                    "CK_ClientReportShares_ValidExpiration",
+                    "[ExpiresAtUtc] IS NULL OR [ExpiresAtUtc] > [CreatedAtUtc]");
+
+                table.HasCheckConstraint(
+                    "CK_ClientReportShares_ValidRevocation",
+                    "[RevokedAtUtc] IS NULL OR [RevokedAtUtc] >= [CreatedAtUtc]");
+            });
         });
 
     }

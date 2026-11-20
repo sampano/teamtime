@@ -249,6 +249,62 @@ namespace TeamTime.Api.Migrations
                     b.ToTable("Clients");
                 });
 
+            modelBuilder.Entity("TeamTime.Api.Models.ClientReportShare", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClientId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedByMemberId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTimeOffset?>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("FromUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ToUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("char(64)")
+                        .IsFixedLength();
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByMemberId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("ClientId", "CreatedAtUtc");
+
+                    b.ToTable("ClientReportShares", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ClientReportShares_ValidDateRange", "[FromUtc] IS NULL OR [ToUtc] IS NULL OR [ToUtc] > [FromUtc]");
+
+                            t.HasCheckConstraint("CK_ClientReportShares_ValidExpiration", "[ExpiresAtUtc] IS NULL OR [ExpiresAtUtc] > [CreatedAtUtc]");
+
+                            t.HasCheckConstraint("CK_ClientReportShares_ValidRevocation", "[RevokedAtUtc] IS NULL OR [RevokedAtUtc] >= [CreatedAtUtc]");
+                        });
+                });
+
             modelBuilder.Entity("TeamTime.Api.Models.RunningTimer", b =>
                 {
                     b.Property<int>("Id")
@@ -375,6 +431,25 @@ namespace TeamTime.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("TeamTime.Api.Models.ClientReportShare", b =>
+                {
+                    b.HasOne("TeamTime.Api.Models.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TeamTime.Api.Models.ApplicationUser", "CreatedByMember")
+                        .WithMany()
+                        .HasForeignKey("CreatedByMemberId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+
+                    b.Navigation("CreatedByMember");
                 });
 
             modelBuilder.Entity("TeamTime.Api.Models.RunningTimer", b =>

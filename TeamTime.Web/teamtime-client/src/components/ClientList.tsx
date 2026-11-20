@@ -5,6 +5,7 @@ import {
   Pencil,
   RotateCcw,
   Search,
+  Share2,
 } from "lucide-react";
 import { Link } from "react-router";
 import { getTimeEntrySummary } from "../api/timeEntries";
@@ -15,6 +16,7 @@ import { ApiError } from "../api/http";
 import { getClients, updateClientStatus } from "../api/clients";
 import type { Client } from "../api/clients";
 import EditClientForm from "./EditClientForm";
+import ShareClientReportModal from "./ShareClientReportModal";
 
 type ClientListProps = {
   canManage: boolean;
@@ -35,6 +37,8 @@ export default function ClientList({
   const [state, setState] = useState<ListState>({
     status: "loading",
   });
+
+  const [sharingClient, setSharingClient] = useState<Client | null>(null);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
@@ -489,6 +493,33 @@ export default function ClientList({
                           ? "Archive"
                           : "Restore"}
                     </button>
+                    <button
+                      type="button"
+                      disabled={
+                        editingClientId !== null ||
+                        changingClientId !== null ||
+                        sharingClient !== null
+                      }
+                      onClick={() => {
+                        setNotice("");
+                        setStatusError("");
+                        setSharingClient(client);
+                      }}
+                      aria-haspopup="dialog"
+                      aria-label={`Share report for ${client.name}`}
+                      className="inline-flex items-center gap-1.5 rounded-xl
+             border border-slate-200 bg-white px-3 py-1.5
+             text-xs font-semibold text-slate-700
+             transition-colors hover:border-indigo-200
+             hover:bg-indigo-50 hover:text-brand-indigo
+             focus-visible:outline-2
+             focus-visible:outline-offset-2
+             focus-visible:outline-brand-indigo
+             disabled:opacity-60"
+                    >
+                      <Share2 size={14} aria-hidden="true" />
+                      Share report
+                    </button>
                   </div>
                 )}
                 <div className="mt-3 flex justify-end">
@@ -508,6 +539,14 @@ export default function ClientList({
           </li>
         ))}
       </ul>
+      {canManage && sharingClient && (
+        <ShareClientReportModal
+          key={sharingClient.id}
+          client={sharingClient}
+          onClose={() => setSharingClient(null)}
+          onSessionExpired={onSessionExpired}
+        />
+      )}
     </div>
   );
 }

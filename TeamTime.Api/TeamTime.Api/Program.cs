@@ -93,6 +93,8 @@ builder.Services.AddScoped<TimeEntryService>();
 
 builder.Services.AddScoped<TimerService>();
 
+builder.Services.AddScoped<ClientReportShareService>();
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
